@@ -11,6 +11,7 @@ import os
 import glob 
 import re
 
+
 path = os.getcwd()
 csv_files = glob.glob(os.path.join(path, 'Desktop/SBU/HHA 550', '*.csv'))
 csv_files
@@ -30,12 +31,13 @@ id_mapping = pd.DataFrame(csvList[0])
 
 len(diabetic_data[(diabetic_data == '?').any(axis=1)])
 len(diabetic_data[~(diabetic_data == '?').any(axis=1)])
-diabetic_data.replace('?', 'NaN', inplace = True)
+
+diabetic_data.replace('?', 'nan', inplace = True)
 # May consider grouping NaNs to Other for statistical analyses selectively / per columns 
 
 # =============================================================================
 # Adding space in between potential words using loop + join() 
-# NOTE: using import re is much simpler but for experimental purposes, this method was chosen 
+# NOTE: using regex() is much simpler as you can see below, but for practice, this method was chosen 
 #
 # Logic: 
 # 1. initialize list
@@ -80,8 +82,6 @@ diabetic_data['race'].value_counts()
 # 
 # squares = lambda x: x*x == def squares_def(x): return x*x
 # print('Using lambda: ', squares(5)) == print('Using def: ', squares_def(5))
-    re.sub(r'\W+', '')
-    return
 # =============================================================================
 show = diabetic_data['medical_specialty'].value_counts()
 
@@ -95,9 +95,103 @@ diabetic_data['medical_specialty'].value_counts()
 # Logic: 
 # 1. initialize list 
 # 2. regex() 
+#
+# Manual cleaning for nested words e.g.: 'and', 'within'
+#
+# Methods of choice (tested): 
+# 1. df.loc[(df.test == '55'),'Score']='fail'
+# 2. df['test'] = np.where((df.test == '100'),'perfect',df.Event)
+# 3. df['test'].mask(df['test'] == '65', 'pass', inplace=True)
+# 4. m = df.test == '0'
+#    df.where(~m,other='fail; office hours required')
 # =============================================================================
 test = diabetic_data['medical_specialty'].to_list()
-res2 = [re.sub(r"(\w)([A-Z])", r"\1 \2", ele) for ele in test]
+res2 = [re.sub(r"(\w)([A-Z][a-z])", r"\1 \2", ele) for ele in test]
 diabetic_data['medical_specialty'] = res2
 
-show = diabetic_data['medical_specialty'].value_counts()
+diabetic_data['medical_specialty'].replace('Physician Not Found', 'nan', inplace = True)
+
+show = diabetic_data['medical_specialty'].value_counts() # <-- manual cleaning is required for removing nested words e.g.: and, within 
+
+diabetic_data.loc[diabetic_data['medical_specialty'] == 'Surgery Plasticwithin Headand Neck', 'medical_specialty'] = 'Surgery Plastic within Head and Neck'
+diabetic_data.loc[diabetic_data['medical_specialty'] == 'Pediatrics Allergyand Immunology', 'medical_specialty'] = 'Pediatrics Allergy and Immunology'
+diabetic_data.loc[diabetic_data['medical_specialty'] == 'Physical Medicineand Rehabilitation', 'medical_specialty'] = 'Physical Medicine and Rehabilitation'
+
+# =============================================================================
+# Splitting the erroneously concatenated dataframes 
+# NOTE: transposing is not required at all--simply for visualization purposes 
+# 
+# Logic: 
+# 1. identify all columns with nan values and transpose
+# 2. split concatenated dataframe by cumsum() values 
+# 3. open each dataframe from dictionary key 
+# 4. rename and format each dataframe 
+# =============================================================================
+id_mapping.columns
+id_mapping['groupNum'] = id_mapping.isnull().all(axis=1).cumsum()
+
+id_mapping_dict = {n: id_mapping.iloc[rows] 
+     for n, rows in id_mapping.groupby('groupNum').groups.items()}
+
+id_mapping_dict 
+print(list(id_mapping_dict))
+
+admission_type_id = id_mapping_dict[0].drop(columns= ['groupNum']).dropna(how='all')
+discharge_disposition_id = id_mapping_dict[1].drop([8,9]).reset_index(drop=True)
+discharge_disposition_id.drop(columns= ['groupNum'], inplace=True)
+discharge_disposition_id.rename(columns ={'admission_type_id':'discharge_disposition_id'}, inplace= True)
+admission_source_id = id_mapping_dict[2].drop([40,41]).reset_index(drop=True)
+admission_source_id.drop(columns= ['groupNum'], inplace=True)
+admission_source_id.rename(columns ={'admission_type_id':'admission_source_id'}, inplace= True)
+admission_source_id['description'] = admission_source_id['description'].str.strip()
+
+# =============================================================================
+# Encoding specific column values 
+# NOTE: can manually induce new columns and then splicing new dataframes with only the columns of interest; alternatively use for-loop 
+# diabetic_data['race'] = diabetic_data['race'].astype('category')
+# diabetic_data[['race']].dtypes
+# diabetic_data['race_encoded'] = diabetic_data['race'].cat.codes
+# diabetic_data['race_encoded'].nunique()
+
+# diabetic_data['age_encoded'] = diabetic_data['age'].astype('category').cat.codes 
+# diabetic_data[['age']].dtypes
+# diabetic_data['age_encoded'].nunique()
+#
+# Logic: 
+# 1. dtype change for cat.codes 
+# 2. initialize list of all object columns 
+# 3. 
+# =============================================================================
+len(diabetic_data[(diabetic_data == 'nan').any(axis=1)])
+len(diabetic_data[~(diabetic_data == 'nan').any(axis=1)])
+
+diabeticSamp = diabetic_data.sample(50)
+diabeticSamp[['age']].dtypes
+list(diabeticSamp.age)
+diabeticSamp[['race']].dtypes 
+
+# Testing with sample 
+cols = diabeticSamp.columns
+cols_obj = diabeticSamp.select_dtypes(['object']).columns
+to_cat = list(diabeticSamp.select_dtypes(['object']).columns)
+
+for name in to_cat:
+    diabeticSamp[name] = diabeticSamp[name].astype('category')
+    
+diabeticSamp[cols_obj] = diabeticSamp[cols_obj].apply(lambda x: x.cat.codes)
+
+# Initialize to main dataframe 
+diabetic_data.race.dtypes
+cols = diabetic_data.columns
+cols_obj = diabetic_data.select_dtypes(['object']).columns
+to_cat = list(diabetic_data.select_dtypes(['object']).columns)
+
+for name in to_cat:
+    diabetic_data[name] = diabetic_data[name].astype('category')
+    
+diabetic_data[cols_obj] = diabetic_data[cols_obj].apply(lambda x: x.cat.codes)
+
+
+# =============================================================================
+# Filtering out new dataframes
+# =============================================================================
