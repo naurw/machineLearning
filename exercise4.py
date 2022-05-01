@@ -110,6 +110,20 @@ def nans (i):
 
 nans(diabetic_data)
 
+diabetic_data.age.value_counts()
+'''[70-80)     26068
+[60-70)     22483
+[50-60)     17256
+[80-90)     17197
+[40-50)      9685
+[30-40)      3775
+[90-100)     2793
+[20-30)      1657
+[10-20)       691
+[0-10)        161'''
+ 
+
+
 # Formating the strings within certain columns 
 t = diabetic_data['race'].to_list()
 print('the original list:\n', random.sample(t, 50))
@@ -357,10 +371,12 @@ X_test = test_df.drop('readmitted',axis=1)
 y_test = test_df['readmitted']
 
 scaler=StandardScaler()
-X_train[['race', 'gender', 'age']] = pd.DataFrame(scaler.fit_transform(X_train[['race', 'gender', 'age']]),columns=['race', 'gender', 'age'])
-X_valid[['race', 'gender', 'age']] = pd.DataFrame(scaler.transform(X_valid[['race', 'gender', 'age']]),columns=['race', 'gender', 'age'])
-X_test[['race', 'gender', 'age']] = pd.DataFrame(scaler.transform(X_test[['race', 'gender', 'age']]),columns=['race', 'gender', 'age'])
+X_train[['race', 'gender', 'number_diagnoses']] = pd.DataFrame(scaler.fit_transform(X_train[['race', 'gender', 'number_diagnoses']]),columns=['race', 'gender', 'number_diagnoses'])
+X_valid[['race', 'gender', 'number_diagnoses']] = pd.DataFrame(scaler.transform(X_valid[['race', 'gender', 'number_diagnoses']]),columns=['race', 'gender', 'number_diagnoses'])
+X_test[['race', 'gender', 'number_diagnoses']] = pd.DataFrame(scaler.transform(X_test[['race', 'gender', 'number_diagnoses']]),columns=['race', 'gender', 'number_diagnoses'])
 
+
+binary_diabetic.columns
 """# Creating and Understanding Models"""
 
 def calc_specificity(y_actual, y_pred, thresh):
@@ -442,3 +458,34 @@ plot(fig)
 
 fig = px.scatter(binary_diabetic, x='time_in_hospital', y='race', title='Age and Race ',color='readmitted', hover_data = binary_diabetic[['readmitted']])
 plot(fig)
+
+
+
+test = diabetic_data.copy(deep = True)
+test2 = diabetic_data.copt(deep = True)
+test.age.value_counts()
+test.age.unique()
+def mod_age(i, g):
+    for i, g in range(g.shape[0]):
+        if(g.loc[i,'age']=='[70-80)'):
+            g.loc[i,'age']=random.randint(70, 79)
+        elif(g.loc[i,'age']=='[60-70)'):
+            g.loc[i,'age']= random.randint(60,69)
+        elif(g.loc[i,'age']=='[50-60)'):
+            g.loc[i,'age']= random.randint(50, 59)
+        elif(g.loc[i,'age_range']=='[80-90)'):
+            g.loc[i,'age_range']=  random.randint(80, 89)
+        elif(g.loc[i,'age_range']=='[40-50)'):
+            g.loc[i,'age_range']=random.randint(40, 49)
+        elif(g.loc[i,'age_range']=='[30-40)'):
+            g.loc[i,'age_range']=random.randint(30, 39)
+        elif(g.loc[i,'age_range']=='[90-100)'):
+            g.loc[i,'age_range']=random.randint(90, 99)
+        elif(g.loc[i,'age_range']=='[20-30)'):
+            g.loc[i,'age_range']=random.randint(20, 29)
+        elif(g.loc[i,'age_range']=='[10-20)'):
+            g.loc[i,'age_range']= random.randint(10, 19) 
+        elif(g.loc[i,'age_range']=='[0-20)'):
+            g.loc[i,'age_range']= random.randint(0, 9)
+
+mod_age(test2, test2)
