@@ -1,6 +1,6 @@
 ## Diabetes Readmission Prediction Model 
 * Datasource: https://archive.ics.uci.edu/ml/datasets/diabetes+130-us+hospitals+for+years+1999-2008 
-```diabetic_data_model_v2 .ipynb```
+  * ```diabetic_data_model_v2 .ipynb```
 * Future iterations / refinements to this notebook will come 
 
 ## Models within this repo: 
